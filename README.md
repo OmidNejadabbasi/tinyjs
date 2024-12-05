@@ -40,14 +40,14 @@
 
   Exp         = Exp1 "?" Exp1 ":" Exp                         --conditional
               | Exp1
-  Exp1        = Exp1 "??" Exp2                                --unwrapelse
+  Exp1        = Exp2 "??" Exp1                                --unwrapelse
               | Exp2
-  Exp2        = Exp3 ("||" Exp3)+                             --or
-              | Exp3 ("&&" Exp3)+                             --and
+  Exp2        = Exp3 "||" Exp2                           --or
+              | Exp3 "&&" Exp2                           --and
               | Exp3
-  Exp3        = Exp4 ("|" Exp4)+                              --bitor
-              | Exp4 ("^" Exp4)+                              --bitxor
-              | Exp4 ("&" Exp4)+                              --bitand
+  Exp3        = Exp4 "|" Exp3                             --bitor
+              | Exp4 "^" Exp3                             --bitxor
+              | Exp4 "&" Exp3                             --bitand
               | Exp4
   Exp4        = Exp5 ("<="|"<"|"=="|"!="|">="|">") Exp5       --compare
               | Exp5

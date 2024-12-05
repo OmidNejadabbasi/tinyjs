@@ -194,9 +194,96 @@ export class Parser {
     return { type: "ExpressionStatement", expression: expr };
   }
 
-  parseExpression() {
-    // Handle expressions based on precedence
-    return this.parsePrimary();
+  parseExpression(): any {
+    return this.parseConditional();
+  }
+  parseConditional() {
+    let condition = this.parseExp1();
+    if (this.matchToken("?")) {
+      this.consume("?");
+      const trueBranch = this.parseExp1();
+      this.consume(":");
+      const falseBranch = this.parseExpression();
+      return { type: "TernaryOp", exp1: condition, trueBranch, falseBranch };
+    }
+    return condition;
+  }
+
+  parseExp1(): any {
+    // Null coalscing operator
+    const left = this.parseExp2();
+    if (this.matchToken("??")) {
+      this.consume("??");
+      const right = this.parseExp1();
+      return { type: "NullCoal", left, right };
+    }
+    return left;
+  }
+  parseExp2(): any {
+    // and op
+    const left = this.parseExp3();
+    if (this.matchToken("&&")) {
+      this.consume("&&");
+      const right = this.parseExp2();
+      return { type: "AndOp", left, right };
+    } else if (this.matchToken("||")) {
+      this.consume("||");
+      const right = this.parseExp2();
+      return { type: "OrOp", left, right };
+    }
+    return left;
+  }
+
+  parseExp3(): any {
+    const left = this.parseExp9();
+    if (this.matchToken("|")) {
+      this.consume("|");
+      const right = this.parseExp3();
+      return { type: "BitOr", left, right };
+    } else if (this.matchToken("^")) {
+      this.consume("^");
+      const right = this.parseExp3();
+      return { type: "BitXor", left, right };
+    } else if (this.matchToken("&")) {
+      this.consume("&");
+      const right = this.parseExp3();
+      return { type: "BitAnd", left, right };
+    }
+    return left;
+  }
+  parseExp4() {
+    throw new Error("Method not implemented.");
+  }
+
+  parseExp9() {
+    // Handle primary expressions like literals, identifiers, and groupings
+    if (this.matchToken("(")) {
+      this.consume("("); // Consume '('
+      const exp = this.parseExpression();
+      this.consume(")"); // Expect ')'
+      return exp;
+    }
+
+    // Match other terminals like true, false, intlit, etc.
+    if (this.matchToken("true")) {
+      this.consume("true");
+      return { type: "Literal", value: true };
+    }
+    if (this.matchToken("false")) {
+      this.consume("false");
+      return { type: "Literal", value: false };
+    }
+
+    if (this.currentToken().type === "NUMBER") {
+      return {
+        type: "Literal",
+        value: parseInt(this.consume("NUMBER").value ?? ""),
+      };
+    }
+  }
+
+  private matchToken(t: string) {
+    return this.currentToken().value === t;
   }
 
   parsePrimary() {

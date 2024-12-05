@@ -108,6 +108,13 @@ export class Lexer {
   }
 }
 export type Token = {
-  type: string;
+  type:
+    | "STRING"
+    | "NUMBER"
+    | "IDENTIFIER"
+    | "OPERATOR"
+    | "KEYWORD"
+    | "UNKNOWN"
+    | "EOF";
   value: string | null;
 };
