@@ -1,5 +1,9 @@
+import { Token } from "./lexer";
+
 export class Parser {
-  constructor(tokens) {
+  tokens: Token[];
+  pos: number;
+  constructor(tokens: Token[]) {
     this.tokens = tokens;
     this.pos = 0;
   }
@@ -7,8 +11,10 @@ export class Parser {
   currentToken() {
     return this.tokens[this.pos];
   }
-
-  consume(expectedType) {
+  aheadToken() {
+    return this.tokens[this.pos + 1];
+  }
+  consume(expectedType: string) {
     const token = this.currentToken();
     if (token.type === expectedType || token.value === expectedType) {
       this.pos++;
@@ -33,7 +39,7 @@ export class Parser {
     return statements;
   }
 
-  parseStatement() {
+  parseStatement(): any {
     const token = this.currentToken();
 
     switch (token.value) {
@@ -57,6 +63,12 @@ export class Parser {
       default:
         return this.parseExpressionStatement();
     }
+  }
+  parseReturnStmt(): any {
+    throw new Error("Method not implemented.");
+  }
+  parseBreakStmt(): any {
+    throw new Error("Method not implemented.");
   }
 
   parseVarDecl() {
@@ -98,7 +110,7 @@ export class Parser {
     const name = this.consume("IDENTIFIER").value;
     const params = this.parseParams();
     const returnType =
-      this.currentToken().value === ":" ? this.parseReturnType() : null;
+      this.currentToken().value === ":" ? this.parseReturnType() : "void";
     const body = this.parseBlock();
     return { type: "FunDecl", name, params, returnType, body };
   }
@@ -113,7 +125,11 @@ export class Parser {
     this.consume(")");
     return params;
   }
-
+  parseReturnType() {
+    this.consume(":");
+    const paramType = this.parseType();
+    return { type: "ReturnType", paramType };
+  }
   parseParam() {
     const name = this.consume("IDENTIFIER").value;
     this.consume(":");
@@ -127,7 +143,7 @@ export class Parser {
     return { type: "Type", name: baseType };
   }
 
-  parseIfStmt() {
+  parseIfStmt(): any {
     this.consume("if");
     const condition = this.parseExpression();
     const thenBlock = this.parseBlock();
@@ -187,7 +203,7 @@ export class Parser {
     const token = this.currentToken();
     if (token.type === "NUMBER") {
       this.consume("NUMBER");
-      return { type: "Literal", value: parseFloat(token.value) };
+      return { type: "Literal", value: parseFloat(token.value || "0") };
     } else if (token.type === "IDENTIFIER") {
       this.consume("IDENTIFIER");
       return { type: "Identifier", name: token.value };

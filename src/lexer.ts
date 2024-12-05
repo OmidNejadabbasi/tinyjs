@@ -1,11 +1,15 @@
 export class Lexer {
-  constructor(input) {
+  input: string;
+  pos: number;
+  tokens: Token[];
+
+  constructor(input: string) {
     this.input = input;
     this.pos = 0;
     this.tokens = [];
   }
 
-  tokenize() {
+  tokenize(): Token[] {
     const tokenRegex =
       /[\s\n\r]*(\/\/.*|let|const|struct|function|if|else|while|repeat|for|in|random|break|return|some|no|true|false|[a-zA-Z_][a-zA-Z0-9_]*|[0-9]+(?:\.[0-9]+(?:[eE][+-]?[0-9]+)?)?|\+{2}|\-{2}|==|<=|>=|!=|\*\*|&&|\|\||[+\-*/%<>&|^~!?{}()\[\].,;"=:\[\]])/y;
 
@@ -34,7 +38,7 @@ export class Lexer {
     return this.tokens;
   }
 
-  getTokenType(value) {
+  getTokenType(value: string) {
     if (
       [
         "let",
@@ -103,3 +107,7 @@ export class Lexer {
     return "UNKNOWN";
   }
 }
+export type Token = {
+  type: string;
+  value: string | null;
+};

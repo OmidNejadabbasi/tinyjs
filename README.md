@@ -1,4 +1,4 @@
-# OmLang
+# TinyJs
 
 ## the grammer:
 
