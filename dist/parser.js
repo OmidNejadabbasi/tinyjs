@@ -211,7 +211,7 @@ export class Parser {
         return left;
     }
     parseExp3() {
-        const left = this.parseExp9();
+        const left = this.parseExp4();
         if (this.matchToken("|")) {
             this.consume("|");
             const right = this.parseExp3();
@@ -230,7 +230,69 @@ export class Parser {
         return left;
     }
     parseExp4() {
-        throw new Error("Method not implemented.");
+        const left = this.parseExp5();
+        if (this.matchToken(/(<=|<|==|!=|>=|>)/y)) {
+            const op = this.consume("OPERATOR");
+            const right = this.parseExp5();
+            return { type: "Comparison", op, left, right };
+        }
+        return left;
+    }
+    parseExp5() {
+        const left = this.parseExp6();
+        if (this.matchToken(/(<<)/y)) {
+            const op = this.consume("OPERATOR");
+            const right = this.parseExp5();
+            return { type: "leftShift", left, right };
+        }
+        else if (this.matchToken(/(>>)/y)) {
+            const op = this.consume("OPERATOR");
+            const right = this.parseExp5();
+            return { type: "rightShift", left, right };
+        }
+        return left;
+    }
+    parseExp6() {
+        const left = this.parseExp7();
+        if (this.matchToken(/(\+)/y)) {
+            const op = this.consume("OPERATOR");
+            const right = this.parseExp6();
+            return { type: "add", left, right };
+        }
+        else if (this.matchToken(/(\-)/y)) {
+            const op = this.consume("OPERATOR");
+            const right = this.parseExp6();
+            return { type: "sub", left, right };
+        }
+        return left;
+    }
+    parseExp7() {
+        const left = this.parseExp8();
+        if (this.matchToken(/(\*)/y)) {
+            const op = this.consume("OPERATOR");
+            const right = this.parseExp7();
+            return { type: "mul", left, right };
+        }
+        else if (this.matchToken(/(\/)/y)) {
+            const op = this.consume("OPERATOR");
+            const right = this.parseExp7();
+            return { type: "div", left, right };
+        }
+        else if (this.matchToken(/(\%)/y)) {
+            const op = this.consume("OPERATOR");
+            const right = this.parseExp7();
+            return { type: "mod", left, right };
+        }
+        return left;
+    }
+    parseExp8() {
+        const left = this.parseExp9();
+        if (this.matchToken(/\*\*/y)) {
+            const op = this.consume("OPERATOR");
+            const right = this.parseExp8();
+            return { type: "power", left, right };
+        }
+        return left;
     }
     parseExp9() {
         // Handle primary expressions like literals, identifiers, and groupings
@@ -249,6 +311,46 @@ export class Parser {
             this.consume("false");
             return { type: "Literal", value: false };
         }
+        if (this.matchToken(/[0-9]+(?:\.[0-9]+(?:[eE][+-]?[0-9]+)?)/y)) {
+            return {
+                type: "floatLit",
+                value: parseFloat(this.consume("NUMBER").value || ""),
+            };
+        }
+        if (this.matchToken(/[0-9]+/y)) {
+            return {
+                type: "intLit",
+                value: parseInt(this.consume("NUMBER").value || ""),
+            };
+        }
+        if (this.currentToken().type === "IDENTIFIER") {
+            const id = this.consume("IDENTIFIER");
+            if (this.matchToken(/(\(|\?\()/y)) {
+                // call
+                const isOptional = this.consume("OPERATOR").value === "(" ? false : true;
+                const args = [];
+                while (!this.matchToken(")")) {
+                    args.push(this.parseExpression());
+                    if (this.matchToken(",")) {
+                        this.consume(",");
+                    }
+                    else {
+                        break;
+                    }
+                }
+                return { type: "call", id, args, isOptional };
+            }
+            if (this.matchToken(/(\[|\?\[)/)) {
+                const isOptional = this.consume("OPERATOR").value === "[" ? false : true;
+                const index = this.parseExpression();
+                return { type: "subscript", id, isOptional, index };
+            }
+            if (this.matchToken(/(\.|\?\.)/)) {
+                const isOptional = this.consume("OPERATOR").value === "." ? false : true;
+                const member = this.consume("IDENTIFIER");
+                return { type: "member", id, isOptional, member };
+            }
+        }
         if (this.currentToken().type === "NUMBER") {
             return {
                 type: "Literal",
@@ -257,7 +359,10 @@ export class Parser {
         }
     }
     matchToken(t) {
-        return this.currentToken().value === t;
+        if (typeof t === "string")
+            return this.currentToken().value === t;
+        else if (t instanceof RegExp)
+            return t.test(this.currentToken().value ?? "");
     }
     parsePrimary() {
         const token = this.currentToken();

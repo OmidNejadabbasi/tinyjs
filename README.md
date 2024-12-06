@@ -51,7 +51,7 @@
               | Exp4
   Exp4        = Exp5 ("<="|"<"|"=="|"!="|">="|">") Exp5       --compare
               | Exp5
-  Exp5        = Exp5 ("<<" | ">>") Exp6                       --shift
+  Exp5        = Exp6 ("<<" | ">>") Exp5                     --shift
               | Exp6
   Exp6        = Exp6 ("+" | "-") Exp7                         --add
               | Exp7

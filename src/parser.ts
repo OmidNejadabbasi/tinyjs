@@ -332,7 +332,7 @@ export class Parser {
       return { type: "Literal", value: false };
     }
 
-    if (this.matchToken(/[0-9]+(?:\.[0-9]+(?:[eE][+-]?[0-9]+)?)?/y)) {
+    if (this.matchToken(/[0-9]+(?:\.[0-9]+(?:[eE][+-]?[0-9]+)?)/y)) {
       return {
         type: "floatLit",
         value: parseFloat(this.consume("NUMBER").value || ""),
@@ -346,8 +346,10 @@ export class Parser {
     }
     if (this.currentToken().type === "IDENTIFIER") {
       const id = this.consume("IDENTIFIER");
-      if (this.matchToken(/(\(|\?\()/)) {
+      if (this.matchToken(/(\(|\?\()/y)) {
         // call
+        const isOptional =
+          this.consume("OPERATOR").value === "(" ? false : true;
         const args = [];
         while (!this.matchToken(")")) {
           args.push(this.parseExpression());
@@ -357,7 +359,23 @@ export class Parser {
             break;
           }
         }
-        return { type: "call", id, args };
+        return { type: "call", id, args, isOptional };
+      }
+
+      if (this.matchToken(/(\[|\?\[)/)) {
+        const isOptional =
+          this.consume("OPERATOR").value === "[" ? false : true;
+
+        const index = this.parseExpression();
+        return { type: "subscript", id, isOptional, index };
+      }
+
+      if (this.matchToken(/(\.|\?\.)/)) {
+        const isOptional =
+          this.consume("OPERATOR").value === "." ? false : true;
+
+        const member = this.consume("IDENTIFIER");
+        return { type: "member", id, isOptional, member };
       }
     }
 
