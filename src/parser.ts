@@ -1,4 +1,4 @@
-import { Token } from "./lexer";
+import { Token, TokenType } from "./lexer";
 
 export class Parser {
   tokens: Token[];
@@ -14,7 +14,7 @@ export class Parser {
   aheadToken() {
     return this.tokens[this.pos + 1];
   }
-  consume(expectedType: string) {
+  consume(expectedType: string | TokenType) {
     const token = this.currentToken();
     if (token.type === expectedType || token.value === expectedType) {
       this.pos++;
@@ -235,7 +235,7 @@ export class Parser {
   }
 
   parseExp3(): any {
-    const left = this.parseExp9();
+    const left = this.parseExp4();
     if (this.matchToken("|")) {
       this.consume("|");
       const right = this.parseExp3();
@@ -251,8 +251,66 @@ export class Parser {
     }
     return left;
   }
-  parseExp4() {
-    throw new Error("Method not implemented.");
+  parseExp4(): any {
+    const left = this.parseExp5();
+    if (this.matchToken(/(<=|<|==|!=|>=|>)/y)) {
+      const op = this.consume("OPERATOR");
+      const right = this.parseExp5();
+      return { type: "Comparison", op, left, right };
+    }
+    return left;
+  }
+  parseExp5(): any {
+    const left = this.parseExp6();
+    if (this.matchToken(/(<<)/y)) {
+      const op = this.consume("OPERATOR");
+      const right = this.parseExp5();
+      return { type: "leftShift", left, right };
+    } else if (this.matchToken(/(>>)/y)) {
+      const op = this.consume("OPERATOR");
+      const right = this.parseExp5();
+      return { type: "rightShift", left, right };
+    }
+    return left;
+  }
+  parseExp6(): any {
+    const left = this.parseExp7();
+    if (this.matchToken(/(\+)/y)) {
+      const op = this.consume("OPERATOR");
+      const right = this.parseExp6();
+      return { type: "add", left, right };
+    } else if (this.matchToken(/(\-)/y)) {
+      const op = this.consume("OPERATOR");
+      const right = this.parseExp6();
+      return { type: "sub", left, right };
+    }
+    return left;
+  }
+  parseExp7(): any {
+    const left = this.parseExp8();
+    if (this.matchToken(/(\*)/y)) {
+      const op = this.consume("OPERATOR");
+      const right = this.parseExp7();
+      return { type: "mul", left, right };
+    } else if (this.matchToken(/(\/)/y)) {
+      const op = this.consume("OPERATOR");
+      const right = this.parseExp7();
+      return { type: "div", left, right };
+    } else if (this.matchToken(/(\%)/y)) {
+      const op = this.consume("OPERATOR");
+      const right = this.parseExp7();
+      return { type: "mod", left, right };
+    }
+    return left;
+  }
+  parseExp8(): any {
+    const left = this.parseExp9();
+    if (this.matchToken(/\*\*/y)) {
+      const op = this.consume("OPERATOR");
+      const right = this.parseExp8();
+      return { type: "power", left, right };
+    }
+    return left;
   }
 
   parseExp9() {
@@ -274,6 +332,19 @@ export class Parser {
       return { type: "Literal", value: false };
     }
 
+    if (this.matchToken(/[0-9]+(?:\.[0-9]+(?:[eE][+-]?[0-9]+)?)?/y)) {
+      return {
+        type: "floatLit",
+        value: parseFloat(this.consume("NUMBER").value || ""),
+      };
+    }
+    if (this.matchToken(/[0-9]+/y)) {
+      return {
+        type: "intLit",
+        value: parseInt(this.consume("NUMBER").value || ""),
+      };
+    }
+
     if (this.currentToken().type === "NUMBER") {
       return {
         type: "Literal",
@@ -282,8 +353,10 @@ export class Parser {
     }
   }
 
-  private matchToken(t: string) {
-    return this.currentToken().value === t;
+  private matchToken(t: string | RegExp) {
+    if (typeof t === "string") return this.currentToken().value === t;
+    else if (t instanceof RegExp)
+      return t.test(this.currentToken().value ?? "");
   }
 
   parsePrimary() {
