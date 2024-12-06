@@ -344,6 +344,22 @@ export class Parser {
         value: parseInt(this.consume("NUMBER").value || ""),
       };
     }
+    if (this.currentToken().type === "IDENTIFIER") {
+      const id = this.consume("IDENTIFIER");
+      if (this.matchToken(/(\(|\?\()/)) {
+        // call
+        const args = [];
+        while (!this.matchToken(")")) {
+          args.push(this.parseExpression());
+          if (this.matchToken(",")) {
+            this.consume(",");
+          } else {
+            break;
+          }
+        }
+        return { type: "call", id, args };
+      }
+    }
 
     if (this.currentToken().type === "NUMBER") {
       return {
