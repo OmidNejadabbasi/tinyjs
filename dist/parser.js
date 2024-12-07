@@ -55,7 +55,8 @@ export class Parser {
         }
     }
     parseReturnStmt() {
-        throw new Error("Method not implemented.");
+        this.consume("return");
+        return { type: "return", value: this.parseExpressionStatement() };
     }
     parseBreakStmt() {
         throw new Error("Method not implemented.");
@@ -350,6 +351,7 @@ export class Parser {
                 const member = this.consume("IDENTIFIER");
                 return { type: "member", id, isOptional, member };
             }
+            return id;
         }
         if (this.currentToken().type === "NUMBER") {
             return {

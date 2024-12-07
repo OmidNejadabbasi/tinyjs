@@ -5,8 +5,15 @@ let program = `let a = 5; const b = 3;
 struct Point { x: float, y: float }
 function add(a: float, b: float): float { function pr(a: string) {} return a + b; }`;
 
-let program2 = `let a  = 5 + 3 * 7;`;
+let program2 = `function add(a: float, b: float): float {
+    function pr(a: string) {} 
+    return a + b; 
+}
+    
+`;
 
+let program3 = `let a = 5; 
+a = 180;`;
 let tokens = new Lexer(program2).tokenize();
 // console.log(tokens);
 

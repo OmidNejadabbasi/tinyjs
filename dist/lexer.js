@@ -1,17 +1,17 @@
 export class Lexer {
     constructor(input) {
-        this.input = input;
+        this.input = input.trim();
         this.pos = 0;
         this.tokens = [];
     }
     tokenize() {
-        const tokenRegex = /[\s\n\r]*(\/\/.*|let|const|struct|function|if|else|while|repeat|for|in|random|break|return|some|no|true|false|[a-zA-Z_][a-zA-Z0-9_]*|[0-9]+(?:\.[0-9]+(?:[eE][+-]?[0-9]+)?)?|\+{2}|\-{2}|==|<=|>=|!=|\*\*|&&|\|\||[+\-*/%<>&|^~!?{}()\[\].,;"=:\[\]])/y;
+        const tokenRegex = /(?:\s|\n|\r)*(\/\/.*|let|const|struct|function|if|else|while|repeat|for|in|random|break|return|some|no|true|false|[a-zA-Z_][a-zA-Z0-9_]*|[0-9]+(?:\.[0-9]+(?:[eE][+-]?[0-9]+)?)?|\+{2}|\-{2}|==|<=|>=|!=|\*\*|&&|\|\||[+\-*/%<>&|^~!?{}()\[\].,;"=:\[\]])/y;
         while (this.pos < this.input.length) {
             tokenRegex.lastIndex = this.pos;
             const match = tokenRegex.exec(this.input);
             if (match) {
                 const value = match[1];
-                if (value.startsWith("//")) {
+                if (match[0].length < 1 && value?.startsWith("//")) {
                     // Ignore comments
                     this.pos = tokenRegex.lastIndex;
                     continue;
