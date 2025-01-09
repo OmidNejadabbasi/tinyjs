@@ -14,7 +14,7 @@ let program2 = `function add(a: float, b: float): float {
 
 let program3 = `let a = 5; 
 a = 180;`;
-let tokens = new Lexer(program2).tokenize();
+let tokens = new Lexer(program).tokenize();
 // console.log(tokens);
 
 const parser = new Parser(tokens);
