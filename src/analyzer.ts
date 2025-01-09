@@ -39,13 +39,120 @@ export default function analyze(ast: any) {
   // the variable to keep track of the current context
   let context = Context.root();
 
-  function must(
-    condition: boolean,
-    message: string,
-    token: { locationMessage: string }
-  ) {
+  type Location = { locationMessage: string };
+
+  function must(condition: boolean, message: string, token: Location): void {
     if (!condition) {
       throw new Error(`${token.locationMessage} ${message}`);
     }
   }
+
+  function mustNotAlreadyBeDeclared(name: string, at: Location): void {
+    must(!context.lookup(name), `Identifier ${name} already declared`, at);
+  }
+
+  function mustHaveBeenFound(entity: any, name: string, at: Location): void {
+    must(entity, `Identifier ${name} not declared`, at);
+  }
+
+  function mustHaveNumericType(e: any, at: Location): void {
+    must([INT, FLOAT].includes(e.type), "Expected a number", at);
+  }
+
+  function mustHaveNumericOrStringType(e: any, at: Location): void {
+    must(
+      [INT, FLOAT, STRING].includes(e.type),
+      "Expected a number or string",
+      at
+    );
+  }
+
+  function mustHaveIntegerType(e: any, at: Location): void {
+    must(e.type === INT, "Expected an integer", at);
+  }
+
+  function mustHaveAnArrayType(e: any, at: Location): void {
+    must(e.type?.kind === "ArrayType", "Expected an array", at);
+  }
+
+  function mustHaveAnOptionalType(e: any, at: Location): void {
+    must(e.type?.kind === "OptionalType", "Expected an optional", at);
+  }
+
+  function mustHaveAStructType(e: any, at: Location): void {
+    must(e.type?.kind === "StructType", "Expected a struct", at);
+  }
+
+  function equivalent(t1: any, t2: any): boolean {
+    return (
+      t1 === t2 ||
+      (t1?.kind === "OptionalType" &&
+        t2?.kind === "OptionalType" &&
+        equivalent(t1.baseType, t2.baseType)) ||
+      (t1?.kind === "ArrayType" &&
+        t2?.kind === "ArrayType" &&
+        equivalent(t1.baseType, t2.baseType)) ||
+      (t1?.kind === "FunctionType" &&
+        t2?.kind === "FunctionType" &&
+        equivalent(t1.returnType, t2.returnType) &&
+        t1.paramTypes.length === t2.paramTypes.length &&
+        t1.paramTypes.every((t: any, i: number) =>
+          equivalent(t, t2.paramTypes[i])
+        ))
+    );
+  }
+
+  function assignable(fromType: any, toType: any): boolean {
+    return (
+      toType == ANY ||
+      equivalent(fromType, toType) ||
+      (fromType?.kind === "FunctionType" &&
+        toType?.kind === "FunctionType" &&
+        // covariant in return types
+        assignable(fromType.returnType, toType.returnType) &&
+        fromType.paramTypes.length === toType.paramTypes.length &&
+        // contravariant in parameter types
+        toType.paramTypes.every((t: any, i: number) =>
+          assignable(t, fromType.paramTypes[i])
+        ))
+    );
+  }
+
+  function typeDescription(type: any): string {
+    switch (type.kind) {
+      case "IntType":
+        return "int";
+      case "FloatType":
+        return "float";
+      case "StringType":
+        return "string";
+      case "BoolType":
+        return "boolean";
+      case "VoidType":
+        return "void";
+      case "AnyType":
+        return "any";
+      case "StructType":
+        return type.name;
+      case "FunctionType":
+        const paramTypes = type.paramTypes.map(typeDescription).join(", ");
+        const returnType = typeDescription(type.returnType);
+        return `(${paramTypes})->${returnType}`;
+      case "ArrayType":
+        return `[${typeDescription(type.baseType)}]`;
+      case "OptionalType":
+        return `${typeDescription(type.baseType)}?`;
+      default:
+        return "UNKNOWN";
+    }
+  }
+
+  function mustBeAssignable(e: any, { toType: }, at: Location) {
+    const message = `Cannot assign a ${typeDescription(
+      e.type
+    )} to a ${typeDescription(type)}`;
+    must(assignable(e.type, type), message, at);
+  }
+
+  
 }
