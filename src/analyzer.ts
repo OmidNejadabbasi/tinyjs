@@ -1,4 +1,4 @@
-import * as core from "./core";
+import * as core from "./core.js";
 
 // context class for keeping track of types and variable in a block context
 export class Context {
@@ -35,7 +35,7 @@ const BOOLEAN = core.boolType;
 const ANY = core.anyType;
 const VOID = core.voidType;
 
-export default function analyze(ast: any) {
+export function analyze(ast: any) {
   // the variable to keep track of the current context
   let context = Context.root();
 
@@ -72,28 +72,28 @@ export default function analyze(ast: any) {
   }
 
   function mustHaveAnArrayType(e: any, at: Location): void {
-    must(e.type?.kind === "ArrayType", "Expected an array", at);
+    must(e.type?.type === "ArrayType", "Expected an array", at);
   }
 
   function mustHaveAnOptionalType(e: any, at: Location): void {
-    must(e.type?.kind === "OptionalType", "Expected an optional", at);
+    must(e.type?.type === "OptionalType", "Expected an optional", at);
   }
 
   function mustHaveAStructType(e: any, at: Location): void {
-    must(e.type?.kind === "StructType", "Expected a struct", at);
+    must(e.type?.type === "StructType", "Expected a struct", at);
   }
 
   function equivalent(t1: any, t2: any): boolean {
     return (
       t1 === t2 ||
-      (t1?.kind === "OptionalType" &&
-        t2?.kind === "OptionalType" &&
+      (t1?.type === "OptionalType" &&
+        t2?.type === "OptionalType" &&
         equivalent(t1.baseType, t2.baseType)) ||
-      (t1?.kind === "ArrayType" &&
-        t2?.kind === "ArrayType" &&
+      (t1?.type === "ArrayType" &&
+        t2?.type === "ArrayType" &&
         equivalent(t1.baseType, t2.baseType)) ||
-      (t1?.kind === "FunctionType" &&
-        t2?.kind === "FunctionType" &&
+      (t1?.type === "FunctionType" &&
+        t2?.type === "FunctionType" &&
         equivalent(t1.returnType, t2.returnType) &&
         t1.paramTypes.length === t2.paramTypes.length &&
         t1.paramTypes.every((t: any, i: number) =>
@@ -106,8 +106,8 @@ export default function analyze(ast: any) {
     return (
       toType == ANY ||
       equivalent(fromType, toType) ||
-      (fromType?.kind === "FunctionType" &&
-        toType?.kind === "FunctionType" &&
+      (fromType?.type === "FunctionType" &&
+        toType?.type === "FunctionType" &&
         // covariant in return types
         assignable(fromType.returnType, toType.returnType) &&
         fromType.paramTypes.length === toType.paramTypes.length &&
@@ -119,7 +119,7 @@ export default function analyze(ast: any) {
   }
 
   function typeDescription(type: any): string {
-    switch (type.kind) {
+    switch (type.type) {
       case "IntType":
         return "int";
       case "FloatType":
@@ -147,12 +147,16 @@ export default function analyze(ast: any) {
     }
   }
 
-  function mustBeAssignable(e: any, { toType: }, at: Location) {
+  function mustBeAssignable(e: any, { type }: any, at: Location) {
     const message = `Cannot assign a ${typeDescription(
       e.type
     )} to a ${typeDescription(type)}`;
     must(assignable(e.type, type), message, at);
   }
 
-  
+  function analyzeAST(ast: any) {
+    console.log(ast);
+  }
+
+  analyzeAST(ast);
 }

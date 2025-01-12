@@ -1,3 +1,4 @@
+import { analyze } from "./analyzer.js";
 import { Lexer } from "./lexer.js";
 import { Parser } from "./parser.js";
 
@@ -19,4 +20,4 @@ let tokens = new Lexer(program).tokenize();
 
 const parser = new Parser(tokens);
 const ast = parser.parse();
-console.log(JSON.stringify(ast, null, 2));
+analyze(ast);
