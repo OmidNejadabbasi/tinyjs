@@ -155,7 +155,53 @@ export function analyze(ast: any) {
   }
 
   function analyzeAST(ast: any) {
-    console.log(ast);
+    return analyzeNode(ast);
+  }
+
+  function analyzeNode(node: any): any {
+    switch (node.type) {
+      case "Program":
+        return analyzeProgram(node.statements);
+      case "VarDecl":
+        return analyzeVarDecl(node.modifier, node.id, node.exp);
+      case "TypeDecl":
+        return analyzeTypeDecl(node.id, node.fields);
+      // Add other cases as needed
+      case "Assignment":
+        return analyzeAssignment(node.id);
+      default:
+        return node;
+    }
+  }
+  function analyzeProgram(statements: any) {
+    return core.program(statements.map((s: any) => analyzeNode(s)));
+  }
+
+  function analyzeVarDecl(modifier: any, id: any, exp: any) {
+    const initializer = analyzeNode(exp);
+    const readOnly = modifier === "const";
+    const variable = core.variable(id, readOnly, initializer.type);
+    mustNotAlreadyBeDeclared(id, { locationMessage: id });
+    context.add(id, variable);
+    return core.variableDeclaration(variable, initializer);
+  }
+
+  function analyzeTypeDecl(id: any, fields: any) {
+    const type = core.structType(id, []);
+    mustNotAlreadyBeDeclared(id, { locationMessage: id });
+    context.add(id, type);
+    type.fields = fields.map((field: any) => analyzeNode(field));
+    // mustHaveDistinctFields(type, { at: id });
+    // mustNotBeSelfContaining(type, { at: id });
+    return core.typeDeclaration(type);
+  }
+
+  function analyzeAssignment(id: any) {
+    const entity = context.lookup(id);
+    mustHaveBeenFound(entity, id, { locationMessage: id });
+    const exp = analyzeNode(id.exp);
+    mustBeAssignable(exp, entity, id);
+    return core.assignment(entity, exp);
   }
 
   analyzeAST(ast);

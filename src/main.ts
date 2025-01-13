@@ -13,11 +13,13 @@ let program2 = `function add(a: float, b: float): float {
     
 `;
 
-let program3 = `let a = 5; 
+let program3 = `let a; 
 a = 180;`;
-let tokens = new Lexer(program).tokenize();
+let tokens = new Lexer(program3).tokenize();
 // console.log(tokens);
 
 const parser = new Parser(tokens);
 const ast = parser.parse();
-analyze(ast);
+console.log(JSON.stringify(ast, null, 2));
+
+// analyze(ast);

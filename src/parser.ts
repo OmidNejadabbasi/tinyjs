@@ -75,15 +75,25 @@ export class Parser {
   parseVarDecl() {
     const keyword = this.consume("KEYWORD");
     const identifier = this.consume("IDENTIFIER");
-    this.consume("=");
-    const initializer = this.parseExpression();
-    this.consume(";");
-    return {
-      type: "VarDecl",
-      keyword: keyword.value,
-      id: identifier.value,
-      init: initializer,
-    };
+    if (this.matchToken("=")) {
+      this.consume("=");
+      const initializer = this.parseExpression();
+      console.log(initializer);
+
+      return {
+        type: "VarDecl",
+        keyword: keyword.value,
+        id: identifier,
+        init: initializer,
+      };
+    } else {
+      this.consume(";");
+      return {
+        type: "VarDecl",
+        keyword: keyword.value,
+        id: identifier.value,
+      };
+    }
   }
 
   parseTypeDecl() {
@@ -192,7 +202,7 @@ export class Parser {
   parseExpressionStatement() {
     const expr = this.parseExpression();
     this.consume(";");
-    return { type: "ExpressionStatement", expression: expr };
+    return expr;
   }
 
   parseExpression(): any {
@@ -325,24 +335,28 @@ export class Parser {
 
     // Match other terminals like true, false, intlit, etc.
     if (this.matchToken("true")) {
-      this.consume("true");
-      return { type: "Literal", value: true };
+      let { locationMessage } = this.consume("true");
+      return { type: "Literal", value: true, locationMessage };
     }
     if (this.matchToken("false")) {
-      this.consume("false");
-      return { type: "Literal", value: false };
+      let { locationMessage } = this.consume("false");
+      return { type: "Literal", value: false, locationMessage };
     }
 
     if (this.matchToken(/[0-9]+(?:\.[0-9]+(?:[eE][+-]?[0-9]+)?)/y)) {
+      let { locationMessage, value } = this.consume("NUMBER");
       return {
         type: "floatLit",
-        value: parseFloat(this.consume("NUMBER").value || ""),
+        value: parseFloat(value || ""),
+        locationMessage,
       };
     }
     if (this.matchToken(/[0-9]+/y)) {
+      let { locationMessage, value } = this.consume("NUMBER");
       return {
         type: "intLit",
-        value: parseInt(this.consume("NUMBER").value || ""),
+        value: parseInt(value || ""),
+        locationMessage,
       };
     }
     if (this.currentToken().type === "IDENTIFIER") {
@@ -361,6 +375,10 @@ export class Parser {
           }
         }
         return { type: "call", id, args, isOptional };
+      }
+      if (this.matchToken("=")) {
+        this.consume("=");
+        return { type: "Assignment", id, value: this.parseExpression() };
       }
 
       if (this.matchToken(/(\[|\?\[)/)) {
@@ -393,6 +411,10 @@ export class Parser {
     if (typeof t === "string") return this.currentToken().value === t;
     else if (t instanceof RegExp)
       return t.test(this.currentToken().value ?? "");
+  }
+
+  private matchTokenType(t: TokenType) {
+    return this.currentToken().type === t;
   }
 
   parsePrimary() {

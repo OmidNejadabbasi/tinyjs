@@ -22,7 +22,14 @@ export class Lexer {
           this.pos = tokenRegex.lastIndex;
           continue;
         }
-        this.tokens.push({ type: this.getTokenType(value), value });
+        this.tokens.push({
+          type: this.getTokenType(value),
+          value,
+          locationMessage: `at position ${this.getLineAndColumn(
+            this.input,
+            this.pos
+          )}`,
+        });
         this.pos = tokenRegex.lastIndex;
       } else {
         throw new Error(
@@ -33,10 +40,23 @@ export class Lexer {
       }
     }
 
-    this.tokens.push({ type: "EOF", value: null }); // End of input
+    this.tokens.push({
+      type: "EOF",
+      value: null,
+      locationMessage: `at position ${this.getLineAndColumn(
+        this.input,
+        this.input.length - 1
+      )}`,
+    }); // End of input
     return this.tokens;
   }
 
+  getLineAndColumn(input: string, pos: number): string {
+    const lines = input.substring(0, pos).split("\n");
+    const line = lines.length;
+    const column = lines[lines.length - 1].length + 1;
+    return `${line}:${column}`;
+  }
   getTokenType(value: string) {
     if (
       [
@@ -109,6 +129,7 @@ export class Lexer {
 export type Token = {
   type: TokenType;
   value: string | null;
+  locationMessage: string;
 };
 export type TokenType =
   | "STRING"
