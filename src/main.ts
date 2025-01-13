@@ -13,13 +13,18 @@ let program2 = `function add(a: float, b: float): float {
     
 `;
 
-let program3 = `let a; 
-a = 180;`;
-let tokens = new Lexer(program3).tokenize();
-// console.log(tokens);
+let program3 = `let a = 2;
+a++; 
+a = 2;`;
+try {
+  let tokens = new Lexer(program3).tokenize();
+  // console.log(tokens);
 
-const parser = new Parser(tokens);
-const ast = parser.parse();
-console.log(JSON.stringify(ast, null, 2));
-
-// analyze(ast);
+  const parser = new Parser(tokens);
+  const ast = parser.parse();
+  console.log(JSON.stringify(ast, null, 2));
+  analyze(ast);
+} catch (e) {
+  console.error(`\u001b[31m${e}\u001b[39m`);
+  process.exitCode = 1;
+}

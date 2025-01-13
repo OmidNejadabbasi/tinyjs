@@ -77,9 +77,7 @@ export class Parser {
     const identifier = this.consume("IDENTIFIER");
     if (this.matchToken("=")) {
       this.consume("=");
-      const initializer = this.parseExpression();
-      console.log(initializer);
-
+      const initializer = this.parseExpressionStatement();
       return {
         type: "VarDecl",
         keyword: keyword.value,
@@ -336,11 +334,11 @@ export class Parser {
     // Match other terminals like true, false, intlit, etc.
     if (this.matchToken("true")) {
       let { locationMessage } = this.consume("true");
-      return { type: "Literal", value: true, locationMessage };
+      return { type: "BoolLit", value: true, locationMessage };
     }
     if (this.matchToken("false")) {
       let { locationMessage } = this.consume("false");
-      return { type: "Literal", value: false, locationMessage };
+      return { type: "BoolLit", value: false, locationMessage };
     }
 
     if (this.matchToken(/[0-9]+(?:\.[0-9]+(?:[eE][+-]?[0-9]+)?)/y)) {
@@ -361,6 +359,14 @@ export class Parser {
     }
     if (this.currentToken().type === "IDENTIFIER") {
       const id = this.consume("IDENTIFIER");
+      if (this.matchToken("++")) {
+        this.consume("++");
+        return { type: "Increment", id };
+      }
+      if (this.matchToken("--")) {
+        this.consume("--");
+        return { type: "Decrement", id };
+      }
       if (this.matchToken(/(\(|\?\()/y)) {
         // call
         const isOptional =

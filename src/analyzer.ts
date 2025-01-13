@@ -119,7 +119,7 @@ export function analyze(ast: any) {
   }
 
   function typeDescription(type: any): string {
-    switch (type.type) {
+    switch (type) {
       case "IntType":
         return "int";
       case "FloatType":
@@ -147,11 +147,11 @@ export function analyze(ast: any) {
     }
   }
 
-  function mustBeAssignable(e: any, { type }: any, at: Location) {
+  function mustBeAssignable(e: any, variable: any, at: Location) {
     const message = `Cannot assign a ${typeDescription(
       e.type
-    )} to a ${typeDescription(type)}`;
-    must(assignable(e.type, type), message, at);
+    )} to a ${typeDescription(variable.type)}`;
+    must(assignable(e.type, variable.type), message, at);
   }
 
   function analyzeAST(ast: any) {
@@ -161,14 +161,27 @@ export function analyze(ast: any) {
   function analyzeNode(node: any): any {
     switch (node.type) {
       case "Program":
-        return analyzeProgram(node.statements);
+        return analyzeProgram(node.body);
       case "VarDecl":
-        return analyzeVarDecl(node.modifier, node.id, node.exp);
+        return analyzeVarDecl(node.keyword, node.id, node.init);
       case "TypeDecl":
         return analyzeTypeDecl(node.id, node.fields);
       // Add other cases as needed
       case "Assignment":
-        return analyzeAssignment(node.id);
+        return analyzeAssignment(node.id, node.value);
+      case "Decrement":
+      case "Increment":
+        return analyzeIncDec(node);
+      case "intLit":
+        return {
+          value: node.value,
+          type: "IntType",
+        };
+      case "floatLit":
+        return {
+          value: node.value,
+          type: "FloatType",
+        };
       default:
         return node;
     }
@@ -180,9 +193,9 @@ export function analyze(ast: any) {
   function analyzeVarDecl(modifier: any, id: any, exp: any) {
     const initializer = analyzeNode(exp);
     const readOnly = modifier === "const";
-    const variable = core.variable(id, readOnly, initializer.type);
-    mustNotAlreadyBeDeclared(id, { locationMessage: id });
-    context.add(id, variable);
+    const variable = core.variable(id.valule, readOnly, initializer.type);
+    mustNotAlreadyBeDeclared(id.value, { locationMessage: id.locationMessage });
+    context.add(id.value, variable);
     return core.variableDeclaration(variable, initializer);
   }
 
@@ -196,13 +209,24 @@ export function analyze(ast: any) {
     return core.typeDeclaration(type);
   }
 
-  function analyzeAssignment(id: any) {
-    const entity = context.lookup(id);
-    mustHaveBeenFound(entity, id, { locationMessage: id });
-    const exp = analyzeNode(id.exp);
+  function analyzeAssignment(id: any, value: any) {
+    const entity = context.lookup(id.value);
+    mustHaveBeenFound(entity, id.value, { locationMessage: id });
+    const exp = analyzeNode(value);
     mustBeAssignable(exp, entity, id);
     return core.assignment(entity, exp);
   }
 
-  analyzeAST(ast);
+  function analyzeIncDec(node: any): any {
+    const entity = context.lookup(node.id.value);
+    mustHaveBeenFound(entity, node.id.value, {
+      locationMessage: node.id.locationMessage,
+    });
+    mustHaveNumericType(entity, node);
+    return node.type === "Incerement"
+      ? core.increment(entity)
+      : core.decrement(entity);
+  }
+
+  return analyzeAST(ast);
 }
